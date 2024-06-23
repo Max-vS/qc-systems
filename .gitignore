@@ -1,0 +1,33 @@
+# Ignore auxiliary and intermediate LaTeX files
+*.aux
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+
+# Ignore PDF files (unless you want to include the final PDF)
+*.pdf
+
+# Ignore LaTeX editor specific files
+*.lof
+*.lot
+*.toc
+*.glo
+*.gls
+*.ist
+*.acn
+*.acr
+*.alg
+*.glg
+*.idx
+*.ilg
+*.ind
+*.bcf
+*.run.xml
+*.blx.bib
+
+# Ignore hidden system files
+.DS_Store
+Thumbs.db

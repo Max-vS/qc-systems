@@ -183,9 +183,11 @@ Balancing these two aspects of cutting away enough to gain a net profit and leav
 \subsection{Pruning Approach}
 We started our research for pruning techniques by looking into the circuits of the Quanto database. A lot of the solutions in there are obviously not optimal or redundant: circuits including two \texttt{X} Gates concatenated or a column circuit only consisting of identity gates. 
 
-Investigating further into these redundancies, we found that most of the time, these non optimal circuits were \textit{subcircuits} of larger structures. Replacing these subcircuits with an optimal equivalent, would greatly improve the cost of the total circuit. On the other hand appending column circuits to a not optimal circuit can't really result in an optimal one, so there is no need to further consider them in future iterations.\\
+Investigating further into these redundancies, we found that most of the time, these non optimal circuits were \textit{subcircuits} of larger structures. Replacing these subcircuits with an optimal equivalent, would greatly improve the cost of the total circuit. On the other hand appending column circuits to a not optimal circuit can't result in an optimal one since if we do so anyways we could replace the suboptimal \textit{prefix-circuit} with a optimal identity, lowering the total cost while maintaining the functionality of the circuit. Therefore there's is no need to further consider these circuits in future iterations.\\
 
-For each iteration we could generate new circuits and check for each of them if there already exists a less expensive circuit in the database if so we can discard the circuit. That would greatly reduce the number of possibilities to consider in the following iterations and limits the entries in the database to the most optimal ones.
+At the same time optimal interim results won't necessarily produce optimal end results. Take for instance a circuit with minimal cost that ends with a column of \texttt{X}-Gates. Appending another column of the same Gates will cancel each other out resulting in two unnecessary columns which can be removed entirely.\\
+
+For each iteration we could generate new circuits and check for each of them if there already exists a less expensive entry in the database if so we can discard this new circuit. That would greatly reduce the number of possibilities to consider in the following iterations and limits the entries in the database to the most optimal ones.
 
 \subsubsection{Proposed Algorithm}
 
@@ -216,7 +218,7 @@ function generateDatabase(n,d,gs){
 } 	# End function
 \end{verbatim}
 
-The algorithm starts with initializing the database and working set dictionaries and generates all possible column circuits for \texttt{n} qubits and a gate-set using the \texttt{generateColumns(n,gs)}. It also removes the column circuit that only consists of identity gates.\\
+The algorithm starts with initializing the database and working set dictionaries and generates all possible column circuits for \texttt{n} qubits and a gate-set using the \texttt{generateColumns(n,gs)} function. It also removes the column circuit that only consists of identity gates.\\
 
 Next, the program iterates over the depth levels starting with a depth of two. For each iteration we take each element from the working set of the previous round and append each column circuit to it. For each of these newly generated circuits the algorithm checks if there already exists an equivalent circuit in the database. 
 
@@ -238,6 +240,10 @@ The amount of the saving depends on the depth of the circuit and the number of q
 However we can say that for $S_l$ column circuits the removal of one circuit in the k-th iteration, results in $S_l^{d-k}$ less circuits the algorithm iterates over.\\
 
 The size of the final database also greatly decreased since only optimal circuits are stored. This should also speed up the lookup in the optimization phase.
+
+\subsubsection{Implementation}
+We've implemented the proposed algorithm from above in python based on the Qiskit and Numpy framework. The resulting software is a prototype just for the identity database generation. We decided to exclude the optimization part since it was too much work and didn't differ in comparison to the original algorithm. Our implementation includes both the original database generation algorithm and our pruning approach.
+
 \subsection{Context of your research (``Why?'')}
 \begin{itemize}
   \item \textbf{What is the problem?}

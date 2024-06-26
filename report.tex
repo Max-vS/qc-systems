@@ -57,7 +57,6 @@
 \usepackage{amsmath}
 \usepackage{makecell}
 
-\renewcommand\theadalign{bc}
 \renewcommand\theadfont{\bfseries}
 
 % inlined bib file
@@ -88,8 +87,6 @@
 \begin{document}
 %-------------------------------------------------------------------------------
 
-%don't want date printed
-\date{}
 
 % make title bold and 14 pt font (Latex default is non-bold, 16 pt)
 \title{\Large \bf Enhancing Quanto:\\Pruning Techniques for Improved Circuit Identity Generation in Quantum Optimization}
@@ -120,66 +117,124 @@ This report summarizes Quanto, a quantum circuit optimizer that uses automated c
 \section{Part A: Paper Summary}
 %-------------------------------------------------------------------------------
 
-\subsection{Context of the work (``Why?'')}
+\subsection{Context and Importance}
 
-Quantum compilers are used to optimize circuits in an effort to reduce execution time, the noise that naturally arises in quantum computations, or both. Generally, the larger the circuit depth, the noisier the computation, leading to more errors in the results. As quantum programs must be executed many times to obtain an accurate picture of their results, reducing the depth of a quantum circuit not only makes a quantum program faster but also reduces the potential for noise and decreases the number of program evaluations required. By optimizing the circuit, quantum compilers enhance the overall efficiency and reliability of quantum computations.
+Quantum compilers are used to optimize circuits in an effort to reduce execution time, the noise that naturally arises in quantum computations, or both. Generally, the larger the circuit depth, the noisier the computation, leading to more errors in the results. As quantum programs must be executed many times to obtain an accurate picture of their results, reducing the depth of a quantum circuit not only makes a quantum program faster but also reduces the potential for noise and decreases the number of program evaluations required.
 \\\\
 Existing quantum compilers focus on mapping logical quantum circuits to quantum devices and their native quantum gates. This involves translating source gates to target gates and adapting the circuit to hardware constraints like qubit connectivity. Typically, only simple circuit identities are used during this process, which overlooks the potential for more complex optimizations.
 \\\\
-Compilers developed by hardware vendors, such as IBM and Google, primarily address the translation and hardware adaptation aspects but pay less attention to optimizing the logical circuit itself by finding comprehensive circuit identities. While circuit identities have been manually identified and automatically generated for single-qubit gates, no current system automatically finds identities for full gate sets or optimizes quantum circuits based on these identities.
-\\\\
-For example, the Verified Optimizer for Quantum Circuits (voqc) applies a limited set of optimization rules: not propagation, Hadamard reduction, single-qubit gate cancellation, two-qubit gate cancellation, and rotation merging, in a specific sequence. These limited rules restrict the potential for discovering more effective optimizations.
-\subsection{Contributions of the work (``How?'')}
+Compilers developed by hardware vendors, such as IBM and Google, primarily address the translation and hardware adaptation aspects but focus less on optimizing the logical circuit by finding comprehensive circuit identities. While circuit identities have been manually identified and automatically generated for single-qubit gates by applying a limited number of rules, no current system automatically finds identities for complete gate sets or optimizes quantum circuits based on these identities.
 
-Quanto automatically generates circuit identities for full gate sets and operates trough two main phases: (1) Identity generation (2) circuit optimization (Fig. \ref{fig:quanto_system_design}).
-\\\\
-In the identity generation phase, all possible circuit identities are generated for a specified depth and number of qubits. These identities are stored in a hash table, using the hash of their unitary matrices as keys, enabling quick lookup by the optimizer.
-\\\\
-In the circuit optimization phase, the input quantum circuit is divided into smaller sub-circuits, or tiles. The optimizer looks up the fingerprint of each tile in the hash table to find equivalent circuit identities. These identities replace the original sub-circuits, iteratively optimizing the circuit until the most efficient version is achieved.
+\begin{figure}
+  \includegraphics[width=0.7\columnwidth]{assets/quanto_system.png}
+  \caption{Quanto system design}
+  \label{fig:quanto_system}
+\end{figure}
+\subsection{Contributions and Methodology}
+
+Quanto automatically generates circuit identities for full gate sets and operates trough two main phases: (1) Identity generation (2) circuit optimization (Fig. \ref{fig:quanto_system}).
 
 \subsubsection{Circuit Identity Generator}
 \textbf{Step 1: Represent the quantum circuit as a grid.}
-The algorithm starts by representing a quantum circuit as a grid. The number of rows $d$ represents the layers in the quantum circuit, also known as the circuit depth, and the number of columns $n$ represents the number of qubits. If no gate is present at a particular position, the identity gate is placed there (Fig. \ref{fig:quanto_example_grid}).
+The algorithm starts by representing a quantum circuit as a grid with a depth $d$ and number of qubits $n$. If no gate is present at a particular position, the identity gate is placed there (Fig. \ref{fig:example_1}).
 \\\\
 \textbf{Step 2: Generation of all possible circuits for $d = 1$.}
-If the gate set contains two-qubit gates, these gates are split into the first and second qubit they operates on (Fig. \ref{}).
+If the gate set contains two-qubit gates, these gates are split into the qubits they operate on ($CX$ gate is split into $CXC$ and $CXT$ as in Fig. \ref{fig:example_1}).
 \\\\
 \textbf{Step 3: Generation of all possible circuits for $d > 1$.}
-All subsequent circuits are generated by iteratively appending circuits of depth one ($d=1$) to each previously generated circuit. This process effectively generates the "cross-product" of circuits with the current depth and circuits of depth one (Fig. \ref{}).
+All subsequent circuits are generated by iteratively appending circuits of depth one ($d=1$) to each previously generated circuit. This process effectively generates the "cross-product" of circuits with the current depth and circuits of depth one.
 \\\\
+\begin{figure}
+  \includegraphics[width=0.8\columnwidth]{assets/grid_example_2.png}
+  \caption{Example grid with identity gate substitution}
+  \label{fig:example_1}
+\end{figure}
 \textbf{Step 4: Calculation of unitary matrices and hash values.}
-For each generated circuit, the algorithm calculates the unitary matrix. To avoid expensive computations repeatedly, it computes a hash value (fingerprint) for each circuit based on its unitary matrix. This fingerprint uniquely identifies the circuit's functionality.
+For each generated circuit, the algorithm calculates the unitary matrix. To avoid expensive computations repeatedly, it computes a hash value (fingerprint) for each circuit based on its unitary matrix.
 \\\\
 \textbf{Step 6: Create fingerprint database.}
-The fingerprints are stored in a hash table, with the circuit structure as the key and the fingerprint as the value (Fig. \ref{}). This enables quick look-up of a circuit’s fingerprint during the optimization phase without recalculating the unitary matrix.
-\\\\
+The fingerprints are stored in a hash table, with the circuit structure as the key and the fingerprint as the value (Table \ref{tab:databases}). This enables quick look-up of a circuit’s fingerprint during the optimization phase without recalculating the unitary matrix.
+
+\begin{table}[h!]
+  \begin{minipage}{0.4\linewidth}
+    \centering
+    {\renewcommand{\arraystretch}{1}%
+    \begin{tabular}{|c | c|}
+      \hline
+      \thead{Key} & \thead{Value} \\
+      \hline
+      $[[H, X], [X, X]]$ & $x7ff\ldots$ \\
+      \hline
+    \end{tabular}}
+  \end{minipage}\hfill
+  \begin{minipage}{0.7\linewidth}
+    \centering
+    {\renewcommand{\arraystretch}{1}%
+    \begin{tabular}{ |c | c | }
+      \hline
+      \thead{Key} & \thead{Value} \\
+      \hline
+       $x7ff…$ & \makecell{$[[X, X], [X, X]]$ \\
+      $[[H, H], [H, H]]$}
+      \\
+      \hline
+      \end{tabular}}
+  \end{minipage}
+  \caption{\label{tab:databases} Left: fingerprint DB. Right: identity DB}
+\end{table}
+
+
 \textbf{Step 7: Create identity database.}
-Circuits with identical fingerprints are stored together, forming equivalence classes of circuits (Fig. \ref{}). Each entry in this hash table represents a set of circuits that perform the same quantum operation but may have different structures.
+Circuits with identical fingerprints are stored together, forming equivalence classes of circuits (Table \ref{tab:databases}). Each entry in this hash table represents a set of circuits that perform the same quantum operation.
 
 \subsubsection{Circuit Optimizer}
 \textbf{Step 1: Generate tiles.}
-The circuit is divided into sub-circuits, referred to as tiles. Tiles have uniform dimensions, with the tile width $j$ representing the maximum depth $d$ of the circuit identities, and the tile length $i$ representing the maximum number of qubits $n$. The number of possible $i \times j$ tiles for an $n \times d$ circuit is $(n-i+1) \cdot (d-j+1)$.
+The circuit is divided into sub-circuits, referred to as tiles. Tiles have uniform dimensions, with the tile width $j$ representing the maximum depth $d$ of the circuit identities, and the tile length $i$ representing the maximum number of qubits $n$ (blue boxes in Fig. \ref{fig:quanto_tile}). The number of possible $i \times j$ tiles for an $n \times d$ circuit is $(n-i+1) \cdot (d-j+1)$.
 \\\\
 \textbf{Step 2: Check tile validity.}
-A tile is invalid and therefore discarded if it contains a two-qubit gate that is not placed at the boundaries of the tile and is cut off by the tile (Fig. \ref{}).
+A tile is invalid and therefore discarded if it contains a two-qubit gate that is not placed at the boundaries of the tile and is cut off by the tile.
 \\\\
+\begin{figure}
+  \includegraphics[width=1\columnwidth]{assets/quanto_tile2.png}
+  \caption{Tile with $i=2$ and $j=3$}
+  \label{fig:quanto_tile}
+\end{figure}
 \textbf{Step 3: Tile lookup.}
-If a tile contains a two-qubit gate, that has been cut off only at the boundaries of the tile, the cut off gate has to be replaced by an Identity gate, so that there will be a match in the circuit identity database (Fig. \ref{}). Now the fingerprint is retrieved from the fingerprint database, without having to calculate the unitary matrix. 
+If a tile contains a two-qubit gate, that has been cut off only at the boundaries of the tile, the cut off gate has to be replaced by an Identity gate, so that there will be a match in the circuit identity database ( a) in Fig. \ref{fig:quanto_tile}). Now the fingerprint is retrieved from the fingerprint database, without having to calculate the unitary matrix. 
 \\\\
 \textbf{Step 4: Apply substitution.}
-For each tile, the corresponding circuit identities are iterated and evaluated by the customizable cost function. In the paper, the cost function optimizes the circuit according to the depth $d$ of the circuit. 
+For each tile, the corresponding circuit identities are iterated and evaluated by the customizable cost function (Quanto paper: depth $d$).
 \\\\
 \textbf{Step 5: Apply substitution to the circuit.}
-The optimizer applies the substitution to the quantum circuit (Fig. \ref{}). If a $CX$ gate was replaced by an identity gate in the tile, the identity gate in the actual circuit must be replaced by a $CX$ gate during the substitution (Fig. \ref{}). 
+The optimizer applies the substitution to the quantum circuit ( b) in Fig. \ref{fig:quanto_tile}). If a $CX$ gate was replaced by an identity gate in the tile, the identity gate in the actual circuit must be replaced by a $CX$ gate during the substitution. 
 \\\\
 \textbf{Step 6: Repeat process.}
 Repeat steps 1-6 for a fixed number of times.
 
 \subsection{Evaluation}
 \subsubsection{Generation of novel identities}
-Quanto is capable of automatically discovering identities known from previous work and generating novel identities, especially for two-qubit gates. By leveraging its automated circuit identity generation capabilities, Quanto can find optimizations that are not identified by other compilers (Fig. \ref{}). For example, in evaluating the IBM Qiskit compiler, Quanto generated novel circuit identities that the Qiskit compiler could not find. This capability is particularly useful for quantum hardware with non-standard native gate sets.
+Quanto is capable of automatically discovering identities known from previous work and generating novel identities for full gate sets, especially for two-qubit gates. This capability is particularly useful for quantum hardware with non-standard native gate sets.
 \subsubsection{Challenge of scalability}
-One of the main challenges faced by Quanto is scalability. The vast space of potential circuit identities and the high computational resources required to generate these identities present significant hurdles. As the number of qubits $n$ and the circuit depth $d$ increase, the number of possible circuits grows exponentially, making it computationally expensive to handle larger circuits. Moreover, many useless identities are stored in the database, contributing to redundancy and inefficiency. Additionally, the tiling approach may limit the ability to find large-scale identities, as it is constrained by the maximum depth of circuit identities it can handle.
+One of the main challenges faced by Quanto is scalability. The space of potential circuit identities scales quickly with $n$ and $d$ as described in the formula below (Symbols in Fig. \ref{tab:scaling}). This is because Quanto generates all possible identites, most of which are unbeneficial.
+
+\begin{table}
+  \centering
+  {\renewcommand{\arraystretch}{1}%
+  \begin{tabular}{ | c | l | }
+    \hline
+    \thead{Symbol} & \thead{Definition} \\
+    \hline
+    $S$ & total number of possible circuits \\
+    \hline
+    $S_{l}$ & number of possible circuits per depth \\
+    \hline
+    $g$ & number of single-qubit gates \\
+    \hline
+    $t$ & number of two-qubit gates \\
+    \hline
+  \end{tabular}}
+  \caption{\label{tab:scaling}Symbols for scaling formula}
+\end{table}
 
 \begin{equation}
      S_{l} =\sum_{r=0}^{\lfloor n/2 \rfloor}\frac{n!}{r! (n-2r)!} g^{n-2r} t^r
@@ -188,31 +243,6 @@ One of the main challenges faced by Quanto is scalability. The vast space of pot
 \begin{equation}
     S = S_{l}^{d}
 \end{equation}
-
-\begin{figure}
-  \centering
-  {\renewcommand{\arraystretch}{1.5}%
-  \begin{tabular}{ | c | l | }
-  \hline
-  \thead{Symbol} & \thead{Definition} \\
-  \hline
-  $S$ & total number of possible circuits \\
-  \hline
-  $S_{l}$ & number of possible circuits per depth \\
-  \hline
-  $g$ & number of single-qubit gates \\
-  \hline
-  $n$ & number of qubits \\
-  \hline
-  $t$ & number of two-qubit gates \\
-  \hline
-  $S$ & number of possible circuits for the depth \\
-  \hline
-  $d$ & depth \\
-  \hline
-  \end{tabular}}
-  \caption{\label{tab:scaling}Symbols for scaling formula}
-\end{figure}
 
 %-------------------------------------------------------------------------------
 \section{Research proposal: Pruning Methods}

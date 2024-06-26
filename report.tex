@@ -55,6 +55,10 @@
 % to be able to draw some self-contained figs
 \usepackage{tikz}
 \usepackage{amsmath}
+\usepackage{makecell}
+
+\renewcommand\theadalign{bc}
+\renewcommand\theadfont{\bfseries}
 
 % inlined bib file
 \usepackage{filecontents}
@@ -152,7 +156,6 @@ The fingerprints are stored in a hash table, with the circuit structure as the k
 \\\\
 \textbf{Step 7: Create identity database.}
 Circuits with identical fingerprints are stored together, forming equivalence classes of circuits (Fig. \ref{}). Each entry in this hash table represents a set of circuits that perform the same quantum operation but may have different structures.
-\\\\
 
 \subsubsection{Circuit Optimizer}
 \textbf{Step 1: Generate tiles.}
@@ -175,9 +178,42 @@ Repeat steps 1-6 for a fixed number of times.
 
 \subsection{Evaluation}
 \subsubsection{Generation of novel identities}
-Quanto is capable of automatically discovering identities known from previous work and generating novel identities, especially for two-qubit gates. By leveraging its automated circuit identity generation capabilities, Quanto can find optimizations that are not identified by other compilers. For example, in evaluating the IBM Qiskit compiler, Quanto generated novel circuit identities that the Qiskit compiler could not find. This capability is particularly useful for quantum hardware with non-standard native gate sets.
+Quanto is capable of automatically discovering identities known from previous work and generating novel identities, especially for two-qubit gates. By leveraging its automated circuit identity generation capabilities, Quanto can find optimizations that are not identified by other compilers (Fig. \ref{}). For example, in evaluating the IBM Qiskit compiler, Quanto generated novel circuit identities that the Qiskit compiler could not find. This capability is particularly useful for quantum hardware with non-standard native gate sets.
 \subsubsection{Challenge of scalability}
 One of the main challenges faced by Quanto is scalability. The vast space of potential circuit identities and the high computational resources required to generate these identities present significant hurdles. As the number of qubits $n$ and the circuit depth $d$ increase, the number of possible circuits grows exponentially, making it computationally expensive to handle larger circuits. Moreover, many useless identities are stored in the database, contributing to redundancy and inefficiency. Additionally, the tiling approach may limit the ability to find large-scale identities, as it is constrained by the maximum depth of circuit identities it can handle.
+
+\begin{equation}
+     S_{l} =\sum_{r=0}^{\lfloor n/2 \rfloor}\frac{n!}{r! (n-2r)!} g^{n-2r} t^r
+\end{equation}
+
+\begin{equation}
+    S = S_{l}^{d}
+\end{equation}
+
+\begin{figure}
+  \centering
+  {\renewcommand{\arraystretch}{1.5}%
+  \begin{tabular}{ | c | l | }
+  \hline
+  \thead{Symbol} & \thead{Definition} \\
+  \hline
+  $S$ & total number of possible circuits \\
+  \hline
+  $S_{l}$ & number of possible circuits per depth \\
+  \hline
+  $g$ & number of single-qubit gates \\
+  \hline
+  $n$ & number of qubits \\
+  \hline
+  $t$ & number of two-qubit gates \\
+  \hline
+  $S$ & number of possible circuits for the depth \\
+  \hline
+  $d$ & depth \\
+  \hline
+  \end{tabular}}
+  \caption{\label{tab:scaling}Symbols for scaling formula}
+\end{figure}
 
 %-------------------------------------------------------------------------------
 \section{Part B: Research proposal (2 pages)}

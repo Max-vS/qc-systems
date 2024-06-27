@@ -6,6 +6,7 @@
 *.log
 *.out
 *.synctex.gz
+*.bbl
 
 # Ignore PDF files (unless you want to include the final PDF)
 *.pdf

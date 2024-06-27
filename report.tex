@@ -204,7 +204,7 @@ If a tile contains a two-qubit gate, that has been cut off only at the boundarie
 \\\\
 \textbf{Step 4: Apply substitution.}
 For each tile, the corresponding circuit identities are iterated and evaluated by the customizable cost function (Quanto paper: depth $d$).
-\\\\
+\\
 \textbf{Step 5: Apply substitution to the circuit.}
 The optimizer applies the substitution to the quantum circuit ( b) in Fig. \ref{fig:quanto_tile}). If a $CX$ gate was replaced by an identity gate in the tile, the identity gate in the actual circuit must be replaced by a $CX$ gate during the substitution. 
 \\\\
@@ -215,7 +215,7 @@ Repeat steps 1-6 for a fixed number of times.
 \subsubsection{Generation of novel identities}
 Quanto is capable of automatically discovering identities known from previous work and generating novel identities for full gate sets, especially for two-qubit gates. This capability is particularly useful for quantum hardware with non-standard native gate sets.
 \subsubsection{Challenge of scalability}
-One of the main challenges faced by Quanto is scalability. The space of potential circuit identities scales quickly with $n$ and $d$ as described in the formula below (Symbols in Fig. \ref{tab:scaling}). This is because Quanto generates all possible identites, most of which are unbeneficial.
+One of the main challenges faced by Quanto is scalability. The space of potential circuit identities scales quickly with $n$ and $d$ as described in the formula below (Symbols in Fig. \ref{tab:scaling}). This is because Quanto generates all possible identites, most of which are suboptimal.
 
 \begin{table}
   \centering

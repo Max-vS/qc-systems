@@ -219,36 +219,36 @@ One of the main challenges faced by Quanto is scalability. The vast space of pot
 \section{Research proposal: Pruning Methods}
 %------------------------------------------------------------------------------
 \subsection{Motivation}
-As stated in the Quanto Paper the number of possible circuits grows exponentially with an increasing number of qubits and
+As stated in the Quanto Paper, the number of possible circuits grows exponentially with an increasing number of qubits and
 increasing circuit depth. In our opinion this is the biggest limiting factor for this type of optimization since it limits the possibilities to optimize larger circuits.\\
 
-The original method introduced tiling as a work around while this greatly improves the level of optimization for larger circuits it still doesn't provide the same
-quality of optimization and speed as a database of larger circuits would do.\\
+The original method introduced tiling as a work around. While this greatly improves the level of optimization for larger circuits, it still doesn't provide the same level of
+quality and speed, as a database of larger circuits would do.\\
 
 Another Problem is the size of the database itself. The proposed algorithm in the Quanto paper stores all possible circuit in its database not only the most optimal ones. This adds a lot of redundancy to the database and slows down the optimization stage when looking for minimal identities.\\
 
-Pruning the search space of all possible quantum circuit is in our opinion the most important factor fro improving the optimizer further and therefore worth investigating. 
+Pruning the search space of all possible quantum circuit is in our opinion the most important factor for improving the optimizer further and therefore worth investigating. 
 
 \subsection{Implications and Limitations}
-One important change that comes to the structure of the optimizer is that the dictionary that maps the circuits to its fingerprint cant be created and used any more. This is due to the fact that because of the pruning, the database generator won't iterate over all circuits and can't compute the mapping from circuits to fingerprints any more.
+One important change that comes to the structure of the optimizer is that the dictionary that maps the circuits to its fingerprint cant be created and used any more. This is due to the fact that because of the pruning, the database generator won't iterate over all circuits and can't compute the mappings from circuits to fingerprints any more.
 
 If we would create the dictionary in an additional step we could also group these circuits based on their equivalence with no significant expanse, making pruning basically useless.\\
 
-In our research we limited ourselves to optimizing the depth of the circuit as it was the primary optimization goal of the Quanto optimizer. Further research is required if our approach is also feasible for other cost functions.
+In our research we limited ourselves to optimizing the depth of the circuit as it was the primary optimization goal of the Quanto optimizer. Further research is required to determine, if our approach is also feasible for arbitrary cost functions.
 
 \subsection{Notations and Definitions}
-Before going over the pruning technique, some words on definitions and important terms that are used in the following sections.
+Before going over the pruning technique, some words on definitions and important terms that are used in the following sections.\\
 
-We use the same notation for the \textbf{gate set}, \textbf{depth} and \textbf{qubit number} as the Quanto paper does. \\
+We use the same notation for the \textbf{gate set}, \textbf{depth} and \textbf{qubit number} as the Quanto paper does.
 
-Additionally we define $C$ or $C^1$ as the set of all circuits with $n$ qubits and a depth of one and $C^k$ as all Circuits of length $k$. The $[a]_\sim$ Operator returns all circuits that are equivalent to $a$. We write $a\equiv b$ for $a$ being equivalent to $b$ ($a$ and $b$ have the same unitary matrix).\\
+%Additionally we define $C$ or $C^1$ as the set of all circuits with $n$ qubits and a depth of one and $C^k$ as all Circuits of length $k$. The $[a]_\sim$ Operator returns all circuits that are equivalent to $a$. We write $a\equiv b$ for $a$ being equivalent to $b$ ($a$ and $b$ have the same unitary matrix).\\
 
-The cost function is generally denoted with $h(c)$ for a circuit $c$.
+The cost function is denoted with $h(c)$ for a circuit $c$.
 
 \begin{description}
-	\item[optimal] A quantum circuit is called optimal if there exists no equivalent circuit (for a specified gate set) with lower cost
+	\item[Optimal]: A quantum circuit is called optimal, if there exists no equivalent circuit (for a specified gate set) with lower cost
 	
-	\item[Column circuit] A circuit with maximum depth of one
+	\item[Column circuit]: A circuit with maximum depth of one
 \end{description}
 
 For the concatenation of two circuits $a$ and $b$ with the same number of qubits we write $a\Vert b$. The gates of each circuit get appended \textit{qubit-wise}.
@@ -256,10 +256,10 @@ For the concatenation of two circuits $a$ and $b$ with the same number of qubits
 
 % -----------------------------------------------------------------------------------
 \subsection{Challenges}
-When we prune the search space of circuits we discard circuits we don't consider. When doing this we need to be careful that we still manage to reach all circuits 
-(or equivalent circuits $[a]_\sim\space\forall a\in C^d$). The pruned database must also include all optimal circuits.\\
+When pruning the search space of circuits circuits get discarded and won't get consider. When doing this we need to be careful, that we still manage to reach all circuits 
+(or at least one equivalent circuit). The pruned database must also include all optimal circuits.\\
 
-At the same time pruning adds overhead to the computation of the database. Se we need to make sure that the expense of these added computational steps don't exceed the advantages of the pruning.\\
+On the other hand, pruning adds overhead to the computation of the database. So we need to make sure that the expense of these added computational steps don't exceed the advantages of the pruning.\\
 
 Balancing these two aspects of cutting away enough to gain a net profit and leaving enough left to have all possibilities covered is the main challenge for this topic.
 
@@ -268,9 +268,21 @@ We started our research for pruning techniques by looking into the circuits of t
 
 e.g. circuits including two \texttt{X} Gates concatenated or a column circuit only consisting of identity gates. \\
 
-Investigating further into these redundancies, we found that most of the time, these non optimal circuits were part of larger structures. Replacing these \textit{subcircuits} with an optimal equivalent, would greatly improve the cost of the overall circuit. \\
+Investigating further into these redundancies, we found that most of the time, these non-optimal circuits were part of larger structures. Replacing these \textit{sub-circuits} with an optimal equivalent would greatly improve the cost of the overall circuit. \\
 
-On the other hand appending column circuits to a not optimal circuit can't result in an optimal one. Since if we do so anyways we could replace the suboptimal part with an optimal identity, lowering the total cost while maintaining the functionality of the circuit. Therefore there's no need to further consider these circuits in future iterations.\\
+However, appending column circuits to a non-optimal circuit can't result in an optimal one. Since if we do so, we could always replace the corresponding part, with an optimal identity, lowering the total cost, while maintaining the functionality of the circuit. Therefore there's no need to further consider these kinds of circuits in future iterations.\\
+
+\begin{figure}
+	\includegraphics[width=0.4\columnwidth]{assets/approach.png}
+	\caption{suboptimal circuits can't lead to optimal results}
+	\label{fig:approach}
+\end{figure}
+
+\begin{figure}
+	\includegraphics[width=0.4\columnwidth]{assets/approach-2.png}
+	\caption{optimal interim results can create suboptimal end results}
+	\label{fig:approach}
+\end{figure}
 
 At the same time optimal interim results won't necessarily produce optimal end results. Take for instance a circuit with minimal cost that ends with a column of \texttt{X}-Gates. Appending another column of the same Gates will cancel each other out (since the \texttt{X}-Gate is self inverse) resulting in two unnecessary columns which can be removed.\\
 
@@ -278,7 +290,7 @@ For each iteration we could generate new circuits and check for each of them if 
 
 \subsubsection{Proposed Algorithm}
 
-The following code-segment shows a algorithm for generating the identity database with the described pruning technique:
+The following pseudo-code-segment shows a algorithm for generating the identity database with the described pruning technique:
 
 \begin{verbatim}
 function generateDatabase(n,d,gs){
@@ -308,29 +320,33 @@ function generateDatabase(n,d,gs){
 
 The algorithm starts with initializing the database and a \textbf{working-set} dictionaries and generates all possible column circuits for \texttt{n} qubits and a gate-set using the \texttt{generateColumns(n,gs)} function. It also removes the column circuit that only consists of identity gates.\\
 
-Next, the program iterates over the depth levels starting with a depth of two up to the maximum depth \texttt{d}. For each iteration we take each element from the working-set of the previous round and append each column circuit to it. For each of these newly generated circuits the algorithm checks if there already exists an equivalent circuit in the database. \\
+Next, the program iterates over the depth levels starting with a depth of two, up to the maximum depth \texttt{d}. For each iteration we take each element from the working-set of the previous round and append every column circuit to it. For each of these newly generated circuits the algorithm checks, if there already exists an equivalent circuit in the database. \\
 
 If the circuit is completely new it gets added to the current working-set and the database. 
 
-If there exists an equivalent circuit we check if the new circuit has lower costs than the existing one, if so we replace it in the database and if applicable in the current working-set. 
+If there exists an equivalent circuit the algorithm checks if the new circuit has lower costs than the existing one. 
+
+if so the old circuit gets replaced by the newly generated one, in the database and if applicable in the current working-set. 
 
 If there exists an optimal solution we don't add the new solution to the current working-set and continue. By doing this we ensure that this circuit wont get used in future rounds.\\
 
 The \texttt{isOptimal(c,db)} method, checks if \texttt{c} is optimal with regards to the current database \text{db} and returns a boolean respectively.\\
 
-It follows from the definition of the algorithm that every element in $ws[i]\space\forall i$ is optimal. The same holds for the database entries.
+% It follows from the definition of the algorithm that every element in $ws[i]\space\forall i$ is optimal. The same holds for the database entries.
 
 % For every existing circuit with $n$ Qubits and depth $d$ there exists at lease an equivalent circuit in the pruned database. To show that we assume that there exists a circuit $a\Vert b$ of depth $j$ with $a\not\in ws[j-1]$. Then because of the definition of the algorithm we know that there must already exist an equivalent circuit in our database $a'$. From that it follows that $a'\Vert b\equiv a\Vert b$. Either $a'\Vert b$ is optimal and therefore in the database or there already exists an equivalent optimal circuit $c$ with $c\equiv a\Vert b$
 
 \subsubsection{Evaluation}
-The amount of the saving depends on the depth of the circuit and the number of qubits but also on the used gate set, which makes it hard to quantify. 
+The amount of reduction depends on the depth of the circuit, the number of qubits and on the used gate set, which makes it hard to quantify generally. 
 
 However we can say that for $S_l$ column circuits the removal of one circuit in the k-th iteration, results in $S_l^{d-k}$ less circuits the algorithm iterates over.\\
 
 The size of the final database also greatly decreased since only optimal circuits are stored. This should also speed up the circuit selection part in the optimization phase.
 
 \subsubsection{Implementation}
-We've implemented the proposed algorithm from above in python based on the Qiskit and Numpy frameworks. The resulting software is a prototype just for the identity database generation. We decided to exclude the optimization part since it was too much work and didn't differ in comparison to the original algorithm. Our implementation includes both the original database generation algorithm from Quanto and our pruning approach.
+We've implemented a small prototype with the proposed algorithm from above in python based on the Qiskit and Numpy frameworks. 
+The resulting software includes both the original database generation algorithm from Quanto and our pruning approach. 
+We decided to exclude the optimization part since this part doesn't differ in comparison to the original program and would have gone beyond the scope.
 
 %-------------------------------------------------------------------------------
 \bibliographystyle{plain}

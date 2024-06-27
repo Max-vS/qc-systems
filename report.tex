@@ -76,10 +76,10 @@
 %for single author (just remove % characters)
 \author{
 {\rm Max von Storch}\\
-Technische Universität München
+Technical University of Munich
 \and
 {\rm Johannes Schielein}\\
-Technische Universität München
+Technical University of Munich
 % copy the following lines to add more authors
 % \and
 % {\rm Name}\\
@@ -91,12 +91,12 @@ Technische Universität München
 %-------------------------------------------------------------------------------
 \begin{abstract}
 %-------------------------------------------------------------------------------
-This report summarizes Quanto, a quantum circuit optimizer that uses automated circuit identity generation. We propose enhancements to Quanto by focusing on pruning the search space of possible circuits, aiming to improve computational efficiency and scalability, particularly for larger circuits.  
+This report summarizes Quanto \cite{2021quanto}, a quantum circuit optimizer that uses automated circuit identity generation. We propose enhancements to Quanto by focusing on pruning the search space of possible circuits, aiming to improve computational efficiency and scalability, particularly for larger circuits.  
 \end{abstract}
 
 
 %-------------------------------------------------------------------------------
-\section{Part A: Paper Summary}
+\section{Paper Summary}
 %-------------------------------------------------------------------------------
 
 \subsection{Context and Importance}
@@ -105,7 +105,7 @@ Quantum compilers are used to optimize circuits in an effort to reduce execution
 \\\\
 Existing quantum compilers focus on mapping logical quantum circuits to quantum devices and their native quantum gates. This involves translating source gates to target gates and adapting the circuit to hardware constraints like qubit connectivity. Typically, only simple circuit identities are used during this process, which overlooks the potential for more complex optimizations.
 \\\\
-Compilers developed by hardware vendors, such as IBM and Google, primarily address the translation and hardware adaptation aspects but focus less on optimizing the logical circuit by finding comprehensive circuit identities. While circuit identities have been manually identified and automatically generated for single-qubit gates by applying a limited number of rules, no current system automatically finds identities for complete gate sets or optimizes quantum circuits based on these identities.
+Compilers developed by hardware vendors, such as IBM \cite{2017qiskit} and Google \cite{2018cirq}, primarily address the translation and hardware adaptation aspects but focus less on optimizing the logical circuit by finding comprehensive circuit identities. While circuit identities have been manually identified and automatically generated for single-qubit gates by applying a limited number of rules, no current system automatically finds identities for complete gate sets or optimizes quantum circuits based on these identities.
 
 \begin{figure}
   \includegraphics[width=0.7\columnwidth]{assets/quanto_system.png}
@@ -114,9 +114,10 @@ Compilers developed by hardware vendors, such as IBM and Google, primarily addre
 \end{figure}
 \subsection{Contributions and Methodology}
 
-Quanto automatically generates circuit identities for full gate sets and operates trough two main phases: (1) Identity generation (2) circuit optimization (Fig. \ref{fig:quanto_system}).
+Quanto automatically generates circuit identities for full gate sets and operates trough two main phases: \ref{gen} Identity generation and \ref{opt} circuit optimization (Fig. \ref{fig:quanto_system}).
 
 \subsubsection{Circuit Identity Generator}
+\label{gen}
 \textbf{Step 1: Represent the quantum circuit as a grid.}
 The algorithm starts by representing a quantum circuit as a grid with a depth $d$ and number of qubits $n$. If no gate is present at a particular position, the identity gate is placed there (Fig. \ref{fig:example_1}).
 \\\\
@@ -170,17 +171,18 @@ The fingerprints are stored in a hash table, with the circuit structure as the k
 Circuits with identical fingerprints are stored together, forming equivalence classes of circuits (Table \ref{tab:databases}). Each entry in this hash table represents a set of circuits that perform the same quantum operation.
 
 \subsubsection{Circuit Optimizer}
+\label{opt}
 \textbf{Step 1: Generate tiles.}
 The circuit is divided into sub-circuits, referred to as tiles. Tiles have uniform dimensions, with the tile width $j$ representing the maximum depth $d$ of the circuit identities, and the tile length $i$ representing the maximum number of qubits $n$ (blue boxes in Fig. \ref{fig:quanto_tile}). The number of possible $i \times j$ tiles for an $n \times d$ circuit is $(n-i+1) \cdot (d-j+1)$.
 \\\\
 \textbf{Step 2: Check tile validity.}
 A tile is invalid and therefore discarded if it contains a two-qubit gate that is not placed at the boundaries of the tile and is cut off by the tile.
-\\\\
 \begin{figure}
   \includegraphics[width=1\columnwidth]{assets/quanto_tile2.png}
   \caption{Tile with $i=2$ and $j=3$}
   \label{fig:quanto_tile}
 \end{figure}
+\\\\
 \textbf{Step 3: Tile lookup.}
 If a tile contains a two-qubit gate, that has been cut off only at the boundaries of the tile, the cut off gate has to be replaced by an Identity gate, so that there will be a match in the circuit identity database ( a) in Fig. \ref{fig:quanto_tile}). Now the fingerprint is retrieved from the fingerprint database, without having to calculate the unitary matrix. 
 \\\\
@@ -230,31 +232,17 @@ One of the main challenges faced by Quanto is scalability. The space of potentia
 \section{Research proposal: Pruning Methods}
 %------------------------------------------------------------------------------
 \subsection{Motivation}
-As stated in the Quanto Paper, the number of possible circuits grows exponentially with an increasing number of qubits and
-increasing circuit depth. In our opinion this is the biggest limiting factor for this type of optimization since it limits the possibilities to optimize larger circuits.\\
-
-The original method introduced tiling as a work around. While this greatly improves the level of optimization for larger circuits, it still doesn't provide the same level of
-quality and speed, as a database of larger circuits would do.\\
-
-Another Problem is the size of the database itself. The proposed algorithm in the Quanto paper stores all possible circuit in its database not only the most optimal ones. This adds a lot of redundancy to the database and slows down the optimization stage when looking for minimal identities.\\
-
-Pruning the search space of all possible quantum circuit is in our opinion the most important factor for improving the optimizer further and therefore worth investigating. 
+As stated in the Quanto Paper, the exponential growth of the number of possible circuits with increasing numbers of qubits $n$ and circuit depth $d$ represents a significant limitation in the optimization of larger quantum circuits. The original method introduced tiling as a workaround, which substantially enhances the optimization level for larger circuits. However, it still falls short in delivering the same quality and speed that a database of larger circuits could achieve.
+\\\\
+Moreover, the current database algorithm, as proposed in the Quanto paper, stores all possible circuits, including non-optimal ones. This redundancy slows down the optimization process, as searching for minimal identities within a bloated database is computationally expensive. Pruning the search space of possible quantum circuits is thus crucial for enhancing the optimizer's performance and is worth investigating.
 
 \subsection{Implications and Limitations}
-One important change that comes to the structure of the optimizer is that the dictionary that maps the circuits to its fingerprint cant be created and used any more. This is due to the fact that because of the pruning, the database generator won't iterate over all circuits and can't compute the mappings from circuits to fingerprints any more.
-
-If we would create the dictionary in an additional step we could also group these circuits based on their equivalence with no significant expanse, making pruning basically useless.\\
-
-In our research we limited ourselves to optimizing the depth of the circuit as it was the primary optimization goal of the Quanto optimizer. Further research is required to determine, if our approach is also feasible for arbitrary cost functions.
+A notable structural change in the optimizer is the elimination of the dictionary that maps circuits to their fingerprints. Due to pruning, the database generator no longer iterates over all circuits, preventing the mapping of circuits to fingerprints. Creating this dictionary in an additional step would allow grouping circuits based on their equivalence without significant computational expense, rendering pruning ineffective.
+\\\\
+Our research focused on optimizing the circuit depth, as it was the primary goal of the Quanto optimizer. Further investigation is necessary to determine if our approach is applicable to other cost functions.
 
 \subsection{Notations and Definitions}
-Before going over the pruning technique, some words on definitions and important terms that are used in the following sections.\\
-
-We use the same notation for the \textbf{gate set}, \textbf{depth} and \textbf{qubit number} as the Quanto paper does.
-
-%Additionally we define $C$ or $C^1$ as the set of all circuits with $n$ qubits and a depth of one and $C^k$ as all Circuits of length $k$. The $[a]_\sim$ Operator returns all circuits that are equivalent to $a$. We write $a\equiv b$ for $a$ being equivalent to $b$ ($a$ and $b$ have the same unitary matrix).\\
-
-The cost function is denoted with $h(c)$ for a circuit $c$.
+Before discussing the pruning technique, we define key terms and notations used in this section. The notation for the gate set $gs$, depth $d$, and qubit number $n$ follows the Quanto paper. The cost function for a circuit $c$ is denoted by $h(c)$.
 
 \begin{description}
 	\item[Optimal]: A quantum circuit is called optimal, if there exists no equivalent circuit (for a specified gate set) with lower cost
@@ -262,53 +250,43 @@ The cost function is denoted with $h(c)$ for a circuit $c$.
 	\item[Column circuit]: A circuit with maximum depth of one
 \end{description}
 
-For the concatenation of two circuits $a$ and $b$ with the same number of qubits we write $a\Vert b$. The gates of each circuit get appended \textit{qubit-wise}.
+For concatenating two circuits $a$ and $b$ with the same number of qubits, we write $a||b$, with gates appended \textit{qubit-wise}.
 
 
 % -----------------------------------------------------------------------------------
 \subsection{Challenges}
-When pruning the search space of circuits circuits get discarded and won't get consider. When doing this we need to be careful, that we still manage to reach all circuits 
-(or at least one equivalent circuit). The pruned database must also include all optimal circuits.\\
-
-On the other hand, pruning adds overhead to the computation of the database. So we need to make sure that the expense of these added computational steps don't exceed the advantages of the pruning.\\
-
-Balancing these two aspects of cutting away enough to gain a net profit and leaving enough left to have all possibilities covered is the main challenge for this topic.
+Pruning the search space involves discarding certain circuits, necessitating careful selection to ensure all optimal circuits are included. Pruning adds computational overhead; thus, it is essential to balance cutting non-essential circuits and retaining enough possibilities to ensure comprehensive coverage.
 
 \subsection{Pruning Approach}
-We started our research for pruning techniques by looking into the circuits of the Quanto database. A lot of the solutions in there are obviously not optimal or redundant: 
-
-e.g. circuits including two \texttt{X} Gates concatenated or a column circuit only consisting of identity gates. \\
-
-Investigating further into these redundancies, we found that most of the time, these non-optimal circuits were part of larger structures. Replacing these \textit{sub-circuits} with an optimal equivalent would greatly improve the cost of the overall circuit. \\
-
-However, appending column circuits to a non-optimal circuit can't result in an optimal one. Since if we do so, we could always replace the corresponding part, with an optimal identity, lowering the total cost, while maintaining the functionality of the circuit. Therefore there's no need to further consider these kinds of circuits in future iterations.\\
+Our research into pruning techniques began with an analysis of the Quanto database, revealing many non-optimal or redundant solutions, such as circuits with concatenated \texttt{X} gates or columns of identity gates. These non-optimal circuits are often part of larger structures and can be replaced by optimal equivalents to improve the overall circuit cost.
+\\\\
+Appending column circuits to a non-optimal circuit cannot yield an optimal one, as the suboptimal parts can be replaced with optimal identities (Fig. \ref{fig:approach1}). Therefore, such circuits do not need consideration in future iterations.
+\\\\
+However, optimal interim results may not always produce optimal end results (Fig. \ref{fig:approach2}). For instance, a minimally costly circuit ending with a column of \texttt{H} gates can become suboptimal when appended with another column of \texttt{H} gates, as they cancel each other out.
+\\\\
+In each iteration, new circuits can be generated, and those with higher costs than existing entries in the database can be discarded, reducing the number of circuits to consider in subsequent iterations and limiting database entries to the most optimal ones.
 
 \begin{figure}
-	\includegraphics[width=0.4\columnwidth]{assets/approach.png}
-	\caption{a can be replaced since its not optimal; c is equivalent to a||b}
-	\label{fig:approach}
+	\includegraphics[width=0.8\columnwidth]{assets/approach.png}
+	\caption{a can be replaced since its not optimal; c is equivalent to a$||$b}
+	\label{fig:approach1}
 \end{figure}
 
 \begin{figure}
-	\includegraphics[width=0.4\columnwidth]{assets/approach-2.png}
+	\includegraphics[width=0.8\columnwidth]{assets/approach-2.png}
 	\caption{a and b are optimal but a||b is not; see c as optimal solution}
-	\label{fig:approach}
+	\label{fig:approach2}
 \end{figure}
-
-At the same time optimal interim results won't necessarily produce optimal end results. Take for instance a circuit with minimal cost that ends with a column of \texttt{X}-Gates. Appending another column of the same Gates will cancel each other out (since the \texttt{X}-Gate is self inverse) resulting in two unnecessary columns which can be removed.\\
-
-For each iteration we could generate new circuits and check for each of them if there already exists a less expensive entry in the database. If so we can discard this new circuit. That would greatly reduce the number of possibilities to consider in the following iterations and limits the entries in the database to the most optimal ones.
 
 \subsubsection{Proposed Algorithm}
 
-The following pseudo-code-segment shows a algorithm for generating the identity database with the described pruning technique:
+The following pseudo-code segment demonstrates an algorithm for generating the identity database using the described pruning technique:
 
 \begin{verbatim}
 function generateDatabase(n,d,gs){
 	db = dict() 	# init database
 	ws = dict() 	# init Working-Set
 	ws[1] = generateColumns(n,gs)
-	ws[1].remove([I,...,I]) 	# remove identity-c.
 	
 	for i in range(2,d) {
 		for c in ws[i-1] {
@@ -329,74 +307,67 @@ function generateDatabase(n,d,gs){
 } 	# End function
 \end{verbatim}
 
-The algorithm starts with initializing the database and a \textbf{working-set} dictionaries and generates all possible column circuits for \texttt{n} qubits and a gate-set using the \texttt{generateColumns(n,gs)} function. It also removes the column circuit that only consists of identity gates.\\
-
-Next, the program iterates over the depth levels starting with a depth of two, up to the maximum depth \texttt{d}. For each iteration we take each element from the working-set of the previous round and append every column circuit to it. For each of these newly generated circuits the algorithm checks, if there already exists an equivalent circuit in the database. \\
-
-If the circuit is completely new it gets added to the current working-set and the database. 
-
-If there exists an equivalent circuit the algorithm checks if the new circuit has lower costs than the existing one. 
-
-if so the old circuit gets replaced by the newly generated one, in the database and if applicable in the current working-set. 
-
-If there exists an optimal solution we don't add the new solution to the current working-set and continue. By doing this we ensure that this circuit wont get used in future rounds.\\
-
-The \texttt{isOptimal(c,db)} method, checks if \texttt{c} is optimal with regards to the current database \text{db} and returns a boolean respectively.\\
+The algorithm starts by initializing the database and a \textbf{working set} dictionary. It generates all possible column circuits for $n$ qubits and a specified gate set $gs$ using the \texttt{generateColumns(n,gs)} function.
+\\\\
+Next, the algorithm iterates over depth levels, starting from a depth of two up to the maximum depth 
+$d$. For each iteration, it takes each element from the previous round's working set and appends every column circuit to it. Each newly generated circuit is checked to see if there is an equivalent circuit already in the database.
+\\\\
+If the circuit is entirely new, it is added to the current working set and the database. If an equivalent circuit exists, the algorithm checks whether the new circuit has a lower cost than the existing one. If so, the older circuit is replaced by the newly generated one in both the database and, if applicable, the current working set.
+\\\\
+If an optimal solution is already present, the new solution is not added to the current working set, ensuring that it will not be used in future rounds. This approach ensures that only optimal circuits are retained in subsequent iterations, effectively reducing the search space and maintaining a lean, efficient database.
+\\\\
+The \texttt{isOptimal(c,db)} method evaluates whether a circuit $c$ is optimal with respect to the current database $db$ and returns a boolean value accordingly.
+\\\\
+By following this definition, every element in the working set and the database remains optimal. For every existing circuit with $n$ qubits and depth $d$, there exists at least one equivalent circuit in the pruned database, ensuring comprehensive coverage of optimal solutions while maintaining computational efficiency.
 
 % It follows from the definition of the algorithm that every element in $ws[i]\space\forall i$ is optimal. The same holds for the database entries.
 
 % For every existing circuit with $n$ Qubits and depth $d$ there exists at lease an equivalent circuit in the pruned database. To show that we assume that there exists a circuit $a\Vert b$ of depth $j$ with $a\not\in ws[j-1]$. Then because of the definition of the algorithm we know that there must already exist an equivalent circuit in our database $a'$. From that it follows that $a'\Vert b\equiv a\Vert b$. Either $a'\Vert b$ is optimal and therefore in the database or there already exists an equivalent optimal circuit $c$ with $c\equiv a\Vert b$
 
 \subsubsection{Evaluation}
-The amount of reduction depends on the depth of the circuit, the number of qubits and on the used gate set, which makes it hard to quantify generally. 
-
-However we can say that for $S_l$ column circuits the removal of one circuit in the k-th iteration, results in $S_l^{d-k}$ less circuits the algorithm iterates over.\\
-
-The size of the final database also greatly decreased since only optimal circuits are stored. This should also speed up the circuit selection part in the optimization phase.
+The extent of reduction achieved by the proposed algorithm depends on several factors, including the circuit depth, the number of qubits, and the gate set used. Quantifying these savings can be complex. However, it is clear that removing even a single non-optimal circuit in an iteration results in a significant reduction in the number of circuits considered in subsequent iterations. Specifically, for $S_l$ column circuits, the removal of one circuit in the $k$-th iteration leads to $S_l^{d-k}$ fewer circuits being processed by the algorithm (Table \ref{tab:scaling}).
+\\\\
+Moreover, the final database size is considerably reduced, storing only optimal circuits, which minimizes redundancy and accelerates the circuit selection process.
 
 \subsubsection{Implementation}
-We've implemented a small prototype with the proposed algorithm from above in python based on the Qiskit and Numpy frameworks. 
-The resulting software includes both the original database generation algorithm from Quanto and our pruning approach. 
-We decided to exclude the optimization part since this part doesn't differ in comparison to the original program and would have gone beyond the scope.\\
-
 \begin{figure}
-\begin{tikzpicture}[]
-	\datavisualization [
-		scientific axes,
-    		x axis={label={depth iteration}, attribute=depth, length=3cm, ticks=few},
-   		y axis={label={number of circuits}, attribute=circuits, scaling=0 at 0cm and 15000 at 6cm},
-    		visualize as line/.list={quanto, pruned},
-		pruned={style=red, label in legend={text={pruning approach}}},
- 		quanto={style=blue, label in legend={text={Quanto's approach}}}]
-	
-	 data [set=pruned] {
-		depth, circuits
-		1, 11
-		2, 42
-		3, 139
-		4, 337
-		5, 526
-		6, 585
-		7, 479
-		8, 248
-		9, 75
-	}
-	
-	data [set=quanto] {
-		depth, circuits
-		1, 11
-		2, 121
-		3, 1331
-		4, 14641
-	};
-\end{tikzpicture}
-\caption{comparison of both database generation algorithms}
-\label{fig:comp}
+  \begin{tikzpicture}[]
+    \datavisualization [
+      scientific axes,
+          x axis={label={iteration depth}, attribute=depth, length=3cm, ticks=few},
+         y axis={label={number of circuits per iteration}, attribute=circuits, scaling=0 at 0cm and 15000 at 4.5cm},
+          visualize as line/.list={quanto, pruned},
+      pruned={style=red, label in legend={text={pruning approach}}},
+       quanto={style=blue, label in legend={text={Quanto's approach}}}]
+    
+     data [set=pruned] {
+      depth, circuits
+      1, 11
+      2, 42
+      3, 139
+      4, 337
+      5, 526
+      6, 585
+      7, 479
+      8, 248
+      9, 75
+    }
+    
+    data [set=quanto] {
+      depth, circuits
+      1, 11
+      2, 121
+      3, 1331
+      4, 14641
+    };
+  \end{tikzpicture}
+  \caption{$n = 2$, $gs=[I,H,X,CX]$}
+  \label{fig:comp}
 \end{figure}
+A prototype implementation was developed in Python, using Qiskit and Numpy \cite{numpy} frameworks. This included both the original Quanto algorithm and the new pruning approach. The optimization part was excluded as it does not significantly differ from the original and would exceed the project scope. The prototype demonstrates the pruning approach's efficiency, reducing the search space and maintaining optimal circuit identities, resulting in a smaller database and faster optimization (Fig. \ref{fig:comp}).
 
 %-------------------------------------------------------------------------------
 \bibliographystyle{plain}
-\nocite{*}
 \bibliography{report}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -91,12 +91,12 @@ Technical University of Munich
 %-------------------------------------------------------------------------------
 \begin{abstract}
 %-------------------------------------------------------------------------------
-This report summarizes Quanto, a quantum circuit optimizer that uses automated circuit identity generation. We propose enhancements to Quanto by focusing on pruning the search space of possible circuits, aiming to improve computational efficiency and scalability, particularly for larger circuits.  
+This report summarizes Quanto \cite{2021quanto}, a quantum circuit optimizer that uses automated circuit identity generation. We propose enhancements to Quanto by focusing on pruning the search space of possible circuits, aiming to improve computational efficiency and scalability, particularly for larger circuits.  
 \end{abstract}
 
 
 %-------------------------------------------------------------------------------
-\section{Part A: Paper Summary}
+\section{Paper Summary}
 %-------------------------------------------------------------------------------
 
 \subsection{Context and Importance}
@@ -105,7 +105,7 @@ Quantum compilers are used to optimize circuits in an effort to reduce execution
 \\\\
 Existing quantum compilers focus on mapping logical quantum circuits to quantum devices and their native quantum gates. This involves translating source gates to target gates and adapting the circuit to hardware constraints like qubit connectivity. Typically, only simple circuit identities are used during this process, which overlooks the potential for more complex optimizations.
 \\\\
-Compilers developed by hardware vendors, such as IBM and Google, primarily address the translation and hardware adaptation aspects but focus less on optimizing the logical circuit by finding comprehensive circuit identities. While circuit identities have been manually identified and automatically generated for single-qubit gates by applying a limited number of rules, no current system automatically finds identities for complete gate sets or optimizes quantum circuits based on these identities.
+Compilers developed by hardware vendors, such as IBM \cite{2017qiskit} and Google \cite{2018cirq}, primarily address the translation and hardware adaptation aspects but focus less on optimizing the logical circuit by finding comprehensive circuit identities. While circuit identities have been manually identified and automatically generated for single-qubit gates by applying a limited number of rules, no current system automatically finds identities for complete gate sets or optimizes quantum circuits based on these identities.
 
 \begin{figure}
   \includegraphics[width=0.7\columnwidth]{assets/quanto_system.png}
@@ -262,7 +262,7 @@ Our research into pruning techniques began with an analysis of the Quanto databa
 \\\\
 Appending column circuits to a non-optimal circuit cannot yield an optimal one, as the suboptimal parts can be replaced with optimal identities (Fig. \ref{fig:approach1}). Therefore, such circuits do not need consideration in future iterations.
 \\\\
-However, optimal interim results may not always produce optimal end results (Fig. \ref{fig:approach2}). For instance, a minimally costly circuit ending with a column of \texttt{X} gates can become suboptimal when appended with another column of \texttt{X} gates, as they cancel each other out.
+However, optimal interim results may not always produce optimal end results (Fig. \ref{fig:approach2}). For instance, a minimally costly circuit ending with a column of \texttt{H} gates can become suboptimal when appended with another column of \texttt{H} gates, as they cancel each other out.
 \\\\
 In each iteration, new circuits can be generated, and those with higher costs than existing entries in the database can be discarded, reducing the number of circuits to consider in subsequent iterations and limiting database entries to the most optimal ones.
 
@@ -361,14 +361,13 @@ Moreover, the final database size is considerably reduced, storing only optimal 
       4, 14641
     };
   \end{tikzpicture}
-  \caption{comparison of both database generation algorithms}
+  \caption{$n = 2$, $gs=[I,H,X,CX]$}
   \label{fig:comp}
 \end{figure}
 A prototype implementation was developed in Python, using Qiskit and Numpy frameworks. This included both the original Quanto algorithm and the new pruning approach. The optimization part was excluded as it does not significantly differ from the original and would exceed the project scope. The prototype demonstrates the pruning approach's efficiency, reducing the search space and maintaining optimal circuit identities, resulting in a smaller database and faster optimization (Fig. \ref{fig:comp}).
 
 %-------------------------------------------------------------------------------
 \bibliographystyle{plain}
-\nocite{*}
 \bibliography{report}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

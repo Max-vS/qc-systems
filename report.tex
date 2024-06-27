@@ -56,7 +56,9 @@
 \usepackage{tikz}
 \usepackage{amsmath}
 \usepackage{makecell}
+\usetikzlibrary{datavisualization}
 
+\renewcommand\theadalign{bc}
 \renewcommand\theadfont{\bfseries}
 
 % inlined bib file
@@ -283,13 +285,13 @@ However, appending column circuits to a non-optimal circuit can't result in an o
 
 \begin{figure}
 	\includegraphics[width=0.4\columnwidth]{assets/approach.png}
-	\caption{suboptimal circuits can't lead to optimal results}
+	\caption{a can be replaced since its not optimal; c is equivalent to a||b}
 	\label{fig:approach}
 \end{figure}
 
 \begin{figure}
 	\includegraphics[width=0.4\columnwidth]{assets/approach-2.png}
-	\caption{optimal interim results can create suboptimal end results}
+	\caption{a and b are optimal but a||b is not; see c as optimal solution}
 	\label{fig:approach}
 \end{figure}
 
@@ -355,7 +357,42 @@ The size of the final database also greatly decreased since only optimal circuit
 \subsubsection{Implementation}
 We've implemented a small prototype with the proposed algorithm from above in python based on the Qiskit and Numpy frameworks. 
 The resulting software includes both the original database generation algorithm from Quanto and our pruning approach. 
-We decided to exclude the optimization part since this part doesn't differ in comparison to the original program and would have gone beyond the scope.
+We decided to exclude the optimization part since this part doesn't differ in comparison to the original program and would have gone beyond the scope.\\
+
+\begin{figure}
+\begin{tikzpicture}[]
+	\datavisualization [
+		scientific axes,
+    		x axis={label={depth iteration}, attribute=depth, length=3cm, ticks=few},
+   		y axis={label={number of circuits}, attribute=circuits, scaling=0 at 0cm and 15000 at 6cm},
+    		visualize as line/.list={quanto, pruned},
+		pruned={style=red, label in legend={text={pruning approach}}},
+ 		quanto={style=blue, label in legend={text={Quanto's approach}}}]
+	
+	 data [set=pruned] {
+		depth, circuits
+		1, 11
+		2, 42
+		3, 139
+		4, 337
+		5, 526
+		6, 585
+		7, 479
+		8, 248
+		9, 75
+	}
+	
+	data [set=quanto] {
+		depth, circuits
+		1, 11
+		2, 121
+		3, 1331
+		4, 14641
+	};
+\end{tikzpicture}
+\caption{comparison of both database generation algorithms}
+\label{fig:comp}
+\end{figure}
 
 %-------------------------------------------------------------------------------
 \bibliographystyle{plain}
